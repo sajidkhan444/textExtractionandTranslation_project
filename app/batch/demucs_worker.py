@@ -1,7 +1,6 @@
 # app/batch/demucs_worker.py
 
-from app.batch.queue_manager import input_queue, whisper_queue
-from app.batch.batch_collector import collect_batch
+from app.batch.queue_manager import demucs_queue, whisper_queue
 from app.services.asr_whisper import separate_vocals_batch
 from app.core.settings import USE_DEMUCS
 
@@ -10,7 +9,7 @@ async def demucs_worker():
 
     while True:
 
-        batch = await collect_batch(input_queue)
+        batch = await demucs_queue.get()
 
         file_paths = [item["temp_path"] for item in batch]
 
