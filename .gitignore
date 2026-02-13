@@ -1,0 +1,33 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.log
+
+# Virtual Environments
+venv/
+.venv/
+env/
+.env
+
+# Models / HuggingFace Cache
+models/
+.cache/
+hf_cache/
+TRANSFORMERS_CACHE/
+HF_HOME/
+
+# Temp files
+*.wav
+*.mp3
+*.m4a
+uploads/
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+Thumbs.db
+.DS_Store

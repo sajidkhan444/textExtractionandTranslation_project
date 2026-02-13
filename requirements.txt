@@ -1,0 +1,12 @@
+fastapi==0.110.0
+torch
+torchaudio
+openai-whisper
+demucs
+soundfile
+ffmpeg-python
+transformers
+sentence-transformers
+keybert
+uvicorn
+python-multipart
