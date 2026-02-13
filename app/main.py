@@ -1,7 +1,6 @@
 from fastapi import FastAPI
 import asyncio
 from app.core.model_registry import load_all_models
-from app.batch.batch_collector import batch_collector
 from app.batch.demucs_worker import demucs_worker
 from app.batch.whisper_worker import whisper_worker
 from app.batch.qwen_worker import qwen_worker
@@ -13,9 +12,10 @@ app = FastAPI()
 @app.on_event("startup")
 async def startup():
 
+    # Load models ONCE
     load_all_models()
 
-    asyncio.create_task(batch_collector())
+    # Start workers
     asyncio.create_task(demucs_worker())
     asyncio.create_task(whisper_worker())
     asyncio.create_task(qwen_worker())
