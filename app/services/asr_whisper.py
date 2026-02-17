@@ -14,7 +14,7 @@ from app.core.settings import TARGET_SAMPLE_RATE
 
 def separate_vocals_batch(file_paths):
 
-    device = models.device
+    device = models.audio_device  # FIXED
 
     waveforms = []
 
@@ -59,6 +59,7 @@ def separate_vocals_batch(file_paths):
     vocals = vocals.mean(dim=1)
 
     return vocals.cpu().numpy()
+
 
 
 # ----------------------------
