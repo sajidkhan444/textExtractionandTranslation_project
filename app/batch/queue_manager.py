@@ -4,7 +4,7 @@ import asyncio
 input_queue = asyncio.Queue()
 
 # After batching
-demucs_queue = asyncio.Queue()
+#demucs_queue = asyncio.Queue()
 
 # After demucs
 whisper_queue = asyncio.Queue()
