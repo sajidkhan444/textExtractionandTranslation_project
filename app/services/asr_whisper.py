@@ -14,11 +14,11 @@ from app.core.settings import TARGET_SAMPLE_RATE
 
 def separate_vocals_batch(file_paths):
 
-    device = models.audio_device  # FIXED
-
-    waveforms = []
+    device = models.audio_device
+    outputs = []
 
     for path in file_paths:
+
         wav, sr = sf.read(path)
         wav = torch.from_numpy(wav).float()
 
@@ -32,33 +32,23 @@ def separate_vocals_batch(file_paths):
             resampler = T.Resample(sr, TARGET_SAMPLE_RATE)
             wav = resampler(wav)
 
-        waveforms.append(wav)
+        with torch.no_grad():
+            sources = apply_model(
+                models.demucs_model,
+                wav.unsqueeze(0).to(device),
+                device=device,
+                shifts=1,          # reduced
+                split=True,
+                overlap=0.1,       # reduced
+                progress=False
+            )
 
-    max_len = max(w.shape[1] for w in waveforms)
+        vocals = sources[0, 3].mean(dim=0)
+        outputs.append(vocals.cpu().numpy())
 
-    padded = []
-    for w in waveforms:
-        if w.shape[1] < max_len:
-            pad = max_len - w.shape[1]
-            w = torch.nn.functional.pad(w, (0, pad))
-        padded.append(w)
+        torch.cuda.empty_cache()
 
-    batch_tensor = torch.stack(padded).to(device)
-
-    with torch.no_grad():
-        sources = apply_model(
-            models.demucs_model,
-            batch_tensor,
-            device=device,
-            shifts=2,
-            split=True,
-            overlap=0.25,
-        )
-
-    vocals = sources[:, 3]
-    vocals = vocals.mean(dim=1)
-
-    return vocals.cpu().numpy()
+    return outputs
 
 
 
