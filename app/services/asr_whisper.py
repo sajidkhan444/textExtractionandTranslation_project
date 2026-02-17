@@ -15,7 +15,7 @@ from app.core.settings import TARGET_SAMPLE_RATE
 def separate_vocals_batch(file_paths):
 
     device = models.audio_device
-    outputs = []
+    results = []
 
     for path in file_paths:
 
@@ -35,20 +35,21 @@ def separate_vocals_batch(file_paths):
         with torch.no_grad():
             sources = apply_model(
                 models.demucs_model,
-                wav.unsqueeze(0).to(device),
+                wav.unsqueeze(0).to(device),  # ONE FILE ONLY
                 device=device,
-                shifts=1,          # reduced
+                shifts=2,
                 split=True,
-                overlap=0.1,       # reduced
-                progress=False
+                overlap=0.25,
             )
 
-        vocals = sources[0, 3].mean(dim=0)
-        outputs.append(vocals.cpu().numpy())
+        vocals = sources[0, 3]
+        vocals = vocals.mean(dim=0)
+
+        results.append(vocals.cpu().numpy())
 
         torch.cuda.empty_cache()
 
-    return outputs
+    return results
 
 
 
