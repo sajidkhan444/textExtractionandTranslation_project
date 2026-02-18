@@ -7,6 +7,8 @@ from app.batch.whisper_worker import whisper_worker
 from app.batch.qwen_worker import qwen_worker
 from app.batch.translation_worker import translation_worker
 from app.api.routes import router
+from fastapi import Response
+
 
 app = FastAPI()
 
@@ -20,6 +22,10 @@ async def health():
         "models_loaded": True,
         "queue_running": True
     }
+
+@app.get("/favicon.ico")
+async def favicon():
+    return Response(status_code=204)
 
 
 
