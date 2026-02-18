@@ -1,8 +1,8 @@
 # app/batch/whisper_worker.py
 
 from app.batch.queue_manager import whisper_queue, qwen_queue
-from app.services.asr_whisper import transcribe_batch
-from app.services.asr_cleaning import asr_cleaning
+from app.services.whisper import transcribe_batch
+from app.services.normalization import normalize_batch
 
 
 async def whisper_worker():
@@ -12,14 +12,20 @@ async def whisper_worker():
         data = await whisper_queue.get()
 
         batch = data["batch"]
-        audio_arrays = data["audio"]
+        audio_paths = data["audio"]
 
-        full_texts, timestamped = transcribe_batch(audio_arrays)
+        # Transcribe
+        transcriptions, timestamped = transcribe_batch(audio_paths)
 
-        cleaned = [asr_cleaning(t) for t in full_texts]
+        # Normalize
+        normalized = normalize_batch(transcriptions)
 
+        # Attach results to original items
+        for item, norm, ts in zip(batch, normalized, timestamped):
+            item["normalized"] = norm
+            item["timestamped"] = ts
+
+        # Forward full batch (no parallel arrays)
         await qwen_queue.put({
-            "batch": batch,
-            "cleaned": cleaned,
-            "timestamped": timestamped
+            "batch": batch
         })
