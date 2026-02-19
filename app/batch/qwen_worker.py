@@ -1,10 +1,8 @@
-
 # app/batch/qwen_worker.py
 
 from app.batch.queue_manager import qwen_queue, translation_queue
-from app.services.qwen import extract_keywords_batch
+from app.services.keywords import extract_keywords_batch
 from app.core.logger import logger
-
 
 async def qwen_worker():
 
