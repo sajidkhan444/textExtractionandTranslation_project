@@ -3,6 +3,7 @@
 from app.batch.queue_manager import whisper_queue, qwen_queue
 from app.services.whisper import transcribe_batch
 from app.services.normalization import normalize_batch
+from app.core.logger import logger
 
 
 async def whisper_worker():
@@ -14,18 +15,19 @@ async def whisper_worker():
         batch = data["batch"]
         audio_paths = data["audio"]
 
-        # Transcribe
-        transcriptions, timestamped = transcribe_batch(audio_paths)
+        logger.info(f"🎙 Whisper batch received | size={len(batch)}")
 
-        # Normalize
+        for item in batch:
+            logger.info(f"🎙 Whisper processing started | videoId={item['video_id']}")
+
+        transcriptions, timestamped = transcribe_batch(audio_paths)
         normalized = normalize_batch(transcriptions)
 
-        # Attach results to original items
         for item, norm, ts in zip(batch, normalized, timestamped):
             item["normalized"] = norm
             item["timestamped"] = ts
+            logger.info(f"✅ Whisper completed | videoId={item['video_id']}")
 
-        # Forward full batch (no parallel arrays)
         await qwen_queue.put({
             "batch": batch
         })
