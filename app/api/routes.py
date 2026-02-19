@@ -9,19 +9,18 @@ from app.batch.queue_manager import input_queue
 
 router = APIRouter()
 
-# 🔐 Load from environment
 GPU_API_SECRET = os.getenv("GPU_API_SECRET")
 
 
-class JobRequest(BaseModel):
+class TranscriptionRequest(BaseModel):
     videoId: str
     videoUrl: str
     language: str | None = "auto"
 
 
-@router.post("/ai-services/jobs")
-async def submit_job(
-    data: JobRequest,
+@router.post("/ai-transcription")
+async def submit_transcription(
+    data: TranscriptionRequest,
     x_api_key: str = Header(None)
 ):
 
@@ -40,7 +39,6 @@ async def submit_job(
     audio_path = f"temp_{uuid.uuid4()}.wav"
 
     try:
-
         subprocess.run([
             "ffmpeg",
             "-y",
