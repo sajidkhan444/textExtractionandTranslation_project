@@ -1,6 +1,5 @@
 # app/batch/whisper_worker.py
 
-
 from app.batch.queue_manager import whisper_queue, qwen_queue
 from app.services.asr_whisper import transcribe_batch
 from app.services.normalization_qwen import normalize_batch

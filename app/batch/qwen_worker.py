@@ -4,6 +4,7 @@ from app.batch.queue_manager import qwen_queue, translation_queue
 from app.services.keywords import extract_keywords_batch
 from app.core.logger import logger
 
+
 async def qwen_worker():
 
     while True:
@@ -21,12 +22,10 @@ async def qwen_worker():
 
         keywords_batch = extract_keywords_batch(texts)
 
-# Attach keywords directly into each item
         for item, kws in zip(batch, keywords_batch):
             item["keywords"] = kws
             logger.info(f"✅ Keyword extraction completed | videoId={item['video_id']}")
 
-# Forward full batch
         await translation_queue.put({
             "batch": batch
         })
