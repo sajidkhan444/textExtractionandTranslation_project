@@ -1,3 +1,4 @@
+
 # app/batch/translation_worker.py
 
 import os
@@ -31,6 +32,12 @@ async def translation_worker():
 
             logger.info(f"📤 Preparing webhook payload | videoId={item['video_id']}")
 
+
+#What Payload GPU Sends To AWS Webhook
+   #This goes to:
+   #AWS_WEBHOOK_URL
+   #Which AWS team gives you.
+
             payload = {
                 "videoId": item["video_id"],
                 "transcription": item["normalized"],
@@ -38,6 +45,7 @@ async def translation_worker():
                 "keywords": item["keywords"],
                 "translation": trans["spanish_full"]
             }
+            # Retry mechanism (safe production practice)
 
             for attempt in range(3):
                 try:
@@ -58,7 +66,7 @@ async def translation_worker():
 
                 except Exception as e:
                     logger.error(f"⚠️ Webhook failed | videoId={item['video_id']} | error={str(e)}")
-
+# Cleanup audio file
             if os.path.exists(item["temp_path"]):
                 os.remove(item["temp_path"])
                 logger.info(f"🧹 Temp file removed | videoId={item['video_id']}")

@@ -1,7 +1,7 @@
 # app/batch/qwen_worker.py
 
 from app.batch.queue_manager import qwen_queue, translation_queue
-from app.services.keywords import extract_keywords_batch
+from app.services.keywords import extract_keywords_batch_hybrid
 from app.core.logger import logger
 
 
@@ -20,7 +20,8 @@ async def qwen_worker():
         for item in batch:
             logger.info(f"🧠 Keyword extraction started | videoId={item['video_id']}")
 
-        keywords_batch = extract_keywords_batch(texts)
+        # FIXED FUNCTION NAME
+        keywords_batch = extract_keywords_batch_hybrid(texts)
 
         for item, kws in zip(batch, keywords_batch):
             item["keywords"] = kws
