@@ -36,7 +36,7 @@ async def translation_worker():
                 "transcription": item["normalized"],
                 "summary": item["normalized"][:500],
                 "keywords": item["keywords"],
-                "translation": {
+                "translations": {
                     "es": trans["spanish_full"],
                     "de": trans["german_full"]
                 }
