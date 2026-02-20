@@ -1,4 +1,3 @@
-
 # app/batch/translation_worker.py
 
 import os
@@ -32,24 +31,22 @@ async def translation_worker():
 
             logger.info(f"📤 Preparing webhook payload | videoId={item['video_id']}")
 
-
-#What Payload GPU Sends To AWS Webhook
-   #This goes to:
-   #AWS_WEBHOOK_URL
-   #Which AWS team gives you.
-
             payload = {
                 "videoId": item["video_id"],
                 "transcription": item["normalized"],
                 "summary": item["normalized"][:500],
                 "keywords": item["keywords"],
-                "translation": trans["spanish_full"]
+                "translations": {
+                    "es": trans["spanish_full"],
+                    "de": trans["german_full"]
+                }
             }
-            # Retry mechanism (safe production practice)
 
             for attempt in range(3):
                 try:
-                    logger.info(f"📡 Sending result to AWS | videoId={item['video_id']} | attempt={attempt+1}")
+                    logger.info(
+                        f"📡 Sending result to AWS | videoId={item['video_id']} | attempt={attempt+1}"
+                    )
 
                     requests.post(
                         AWS_WEBHOOK_URL,
@@ -61,12 +58,18 @@ async def translation_worker():
                         timeout=30
                     )
 
-                    logger.info(f"🚀 Job completed & handed over to AWS | videoId={item['video_id']}")
+                    logger.info(
+                        f"🚀 Job completed & handed over to AWS | videoId={item['video_id']}"
+                    )
                     break
 
                 except Exception as e:
-                    logger.error(f"⚠️ Webhook failed | videoId={item['video_id']} | error={str(e)}")
-# Cleanup audio file
+                    logger.error(
+                        f"⚠️ Webhook failed | videoId={item['video_id']} | error={str(e)}"
+                    )
+
             if os.path.exists(item["temp_path"]):
                 os.remove(item["temp_path"])
-                logger.info(f"🧹 Temp file removed | videoId={item['video_id']}")
+                logger.info(
+                    f"🧹 Temp file removed | videoId={item['video_id']}"
+                )
