@@ -7,7 +7,7 @@ from app.batch.queue_manager import translation_queue
 from app.services.translation import translate_batch_multilang
 from app.core.logger import logger
 
-AWS_WEBHOOK_URL = "http://localhost:5500/ai-services/webhooks/transcription"
+AWS_WEBHOOK_URL = "https://api.hippitch.net/ai-services/webhooks/transcription"
 WEBHOOK_SECRET = "3f9b7c8e2a4d6f1b9c0e7a2d4f8c1b6a"
 
 
