@@ -36,11 +36,13 @@ async def translation_worker():
                 "transcription": item["normalized"],
                 "summary": item["normalized"][:500],
                 "keywords": item["keywords"],
-                "translations": {
+                "translation": {
                     "es": trans["spanish_full"],
                     "de": trans["german_full"]
                 }
             }
+       
+
 
             for attempt in range(3):
                 try:
