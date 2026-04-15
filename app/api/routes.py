@@ -22,7 +22,7 @@ router = APIRouter()
 
 GPU_API_SECRET = os.getenv("GPU_API_SECRET")
 
-# AWS Body Schema Ssends to GPU Server:
+# AWS Body Schema Sends to GPU Server:
 class TranscriptionRequest(BaseModel):
     videoId: str
     #GPU Pulls the data from the videoUrl

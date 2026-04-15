@@ -41,6 +41,43 @@ from app.core.settings import MAX_BATCH_SIZE, BATCH_TIMEOUT
 import asyncio
 
 
+# async def batch_collector_worker():
+
+#     while True:
+
+#         batch = []
+
+#         try:
+#             item = await input_queue.get()
+#             batch.append(item)
+
+#             while len(batch) < MAX_BATCH_SIZE:
+#                 try:
+#                     item = await asyncio.wait_for(
+#                         input_queue.get(),
+#                         timeout=BATCH_TIMEOUT
+#                     )
+#                     batch.append(item)
+#                 except asyncio.TimeoutError:
+#                     break
+
+#             # 🚀 Directly send to whisper (skip demucs)
+#             await whisper_queue.put({
+#                 "batch": batch,
+#                 "audio": [item["temp_path"] for item in batch]
+#             })
+
+#         except Exception as e:
+#             print("Batch Collector Error:", e)
+
+
+# app/batch/batch_collector.py
+
+from app.batch.queue_manager import input_queue, whisper_queue
+from app.core.settings import MAX_BATCH_SIZE, BATCH_TIMEOUT
+import asyncio
+
+
 async def batch_collector_worker():
 
     while True:
@@ -48,20 +85,23 @@ async def batch_collector_worker():
         batch = []
 
         try:
+            # Always wait for first item
             item = await input_queue.get()
             batch.append(item)
 
+            # Try to fill batch with timeout
             while len(batch) < MAX_BATCH_SIZE:
                 try:
                     item = await asyncio.wait_for(
                         input_queue.get(),
-                        timeout=BATCH_TIMEOUT
+                        timeout=BATCH_TIMEOUT  # 2-3 seconds
                     )
                     batch.append(item)
                 except asyncio.TimeoutError:
+                    # Don't wait longer, send what we have
                     break
 
-            # 🚀 Directly send to whisper (skip demucs)
+            # Send whatever batch we have (could be 1-8 samples)
             await whisper_queue.put({
                 "batch": batch,
                 "audio": [item["temp_path"] for item in batch]

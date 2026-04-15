@@ -81,3 +81,51 @@ def transcribe_batch(audio_arrays):
         timestamped_texts.append("\n".join(lines))
 
     return full_texts, timestamped_texts
+
+
+def transcribe_single(audio_path):
+    """Transcribe ONE audio file"""
+    result = models.asr_pipeline(
+        audio_path,  # Single file, not batch
+        return_timestamps=True,
+    )
+    
+    text = result["text"].strip()
+    
+    # Build timestamped version
+    lines = []
+    for chunk in result.get("chunks", []):
+        start = int(chunk["timestamp"][0])
+        m = start // 60
+        s = start % 60
+        lines.append(f"({m}:{s:02d}) {chunk['text'].strip()}")
+    
+    timestamped_text = "\n".join(lines)
+    
+    return text, timestamped_text
+
+
+def transcribe_batch(audio_paths):
+    """Keep for backward compatibility"""
+    results = models.asr_pipeline(
+        audio_paths,
+        batch_size=min(len(audio_paths), 6),
+        return_timestamps=True,
+    )
+    
+    full_texts = []
+    timestamped_texts = []
+    
+    for result in results:
+        full_texts.append(result["text"].strip())
+        
+        lines = []
+        for chunk in result.get("chunks", []):
+            start = int(chunk["timestamp"][0])
+            m = start // 60
+            s = start % 60
+            lines.append(f"({m}:{s:02d}) {chunk['text'].strip()}")
+        
+        timestamped_texts.append("\n".join(lines))
+    
+    return full_texts, timestamped_texts

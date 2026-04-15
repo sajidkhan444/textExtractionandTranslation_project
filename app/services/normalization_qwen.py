@@ -83,3 +83,49 @@ def normalize_batch(text_list):
     return cleaned
 
 
+# app/services/normalization_qwen.py - ADD THIS
+
+def normalize_single(text):
+    """Normalize ONE text"""
+    tokenizer = models.qwen_tokenizer
+    model = models.qwen_model
+    
+    messages = [
+        {
+            "role": "system",
+            "content": (
+                "You are an English text normalizer and spell corrector..."
+                # Your existing system prompt
+            )
+        },
+        {"role": "user", "content": text}
+    ]
+    
+    prompt = tokenizer.apply_chat_template(
+        messages,
+        tokenize=False,
+        add_generation_prompt=True
+    )
+    
+    inputs = tokenizer(
+        [prompt],  # Single item list
+        padding=True,
+        truncation=True,
+        return_tensors="pt"
+    ).to(model.device)
+    
+    with torch.no_grad():
+        outputs = model.generate(
+            **inputs,
+            max_new_tokens=600,
+            do_sample=False,
+            temperature=0.15,
+        )
+    
+    decoded = tokenizer.batch_decode(outputs, skip_special_tokens=True)
+    
+    result = decoded[0]
+    if "assistant" in result:
+        result = result.split("assistant")[-1].strip()
+    
+    return result
