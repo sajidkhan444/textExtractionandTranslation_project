@@ -52,41 +52,14 @@ def separate_vocals_batch(file_paths):
     return results
 
 
-
 # ----------------------------
-# BATCHED WHISPER
+# WHISPER TRANSCRIPTION
 # ----------------------------
-
-def transcribe_batch(audio_arrays):
-
-    results = models.asr_pipeline(
-        audio_arrays,
-        batch_size=min(len(audio_arrays), 6),
-        return_timestamps=True,
-    )
-
-    full_texts = []
-    timestamped_texts = []
-
-    for result in results:
-        full_texts.append(result["text"].strip())
-
-        lines = []
-        for chunk in result.get("chunks", []):
-            start = int(chunk["timestamp"][0])
-            m = start // 60
-            s = start % 60
-            lines.append(f"({m}:{s:02d}) {chunk['text'].strip()}")
-
-        timestamped_texts.append("\n".join(lines))
-
-    return full_texts, timestamped_texts
-
 
 def transcribe_single(audio_path):
-    """Transcribe ONE audio file"""
+    """Transcribe ONE audio file (for async pipeline)"""
     result = models.asr_pipeline(
-        audio_path,  # Single file, not batch
+        audio_path,
         return_timestamps=True,
     )
     
@@ -106,7 +79,7 @@ def transcribe_single(audio_path):
 
 
 def transcribe_batch(audio_paths):
-    """Keep for backward compatibility"""
+    """Transcribe multiple audio files (for batch processing)"""
     results = models.asr_pipeline(
         audio_paths,
         batch_size=min(len(audio_paths), 6),

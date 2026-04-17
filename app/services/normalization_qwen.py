@@ -186,11 +186,62 @@ def _prepare_prompts(text_list):
     
     return prompts
 
+def _prepare_single_prompt(text):
+    """Prepare chat prompt for a single text"""
+    tokenizer = models.qwen_tokenizer
+    
+    messages = [
+        {"role": "system", "content": SYSTEM_PROMPT},
+        {"role": "user", "content": text}
+    ]
+    
+    prompt = tokenizer.apply_chat_template(
+        messages,
+        tokenize=False,
+        add_generation_prompt=True
+    )
+    
+    return prompt
+
 def _clean_output(text):
     """Clean the model output by removing 'assistant' prefix if present"""
     if "assistant" in text:
         text = text.split("assistant")[-1].strip()
     return text.strip()
+
+def normalize_single(text):
+    """Normalize a single text (for async pipeline)"""
+    if not text or not text.strip():
+        return ""
+    
+    tokenizer = models.qwen_tokenizer
+    model = models.qwen_model
+    
+    # Prepare prompt
+    prompt = _prepare_single_prompt(text)
+    
+    # Tokenize
+    inputs = tokenizer(
+        [prompt],  # Single item list
+        padding=True,
+        truncation=True,
+        return_tensors="pt"
+    ).to(model.device)
+    
+    # Generate
+    with torch.no_grad():
+        outputs = model.generate(
+            **inputs,
+            max_new_tokens=600,
+            do_sample=False,
+            temperature=0.15,
+        )
+    
+    # Decode and clean
+    decoded = tokenizer.batch_decode(outputs, skip_special_tokens=True)
+    cleaned = _clean_output(decoded[0])
+    
+    return cleaned
 
 def normalize_batch(text_list):
     """Normalize a batch of texts"""
@@ -225,4 +276,3 @@ def normalize_batch(text_list):
     cleaned = [_clean_output(text) for text in decoded]
     
     return cleaned
-
