@@ -111,6 +111,8 @@ async def submit_transcription(
 
 # ============= TEST ENDPOINT FOR DIRECT GPU PROCESSING (NO AWS) =============
 
+# ============= TEST ENDPOINT FOR DIRECT GPU PROCESSING =============
+
 from fastapi import UploadFile, File, Form
 import uuid
 import os
@@ -118,20 +120,21 @@ import subprocess
 
 @router.post("/test-local")
 async def test_local_transcription(
-    video_file: UploadFile = File(..., description="Video file to transcribe"),
-    language: str = Form("auto", description="Language code (auto, en, es, etc)")
+    video_file: UploadFile = File(...),
+    language: str = Form("auto")
 ):
     """
     TEST ENDPOINT - Upload video directly to GPU server.
-    Processes through complete pipeline (Whisper -> Qwen -> Translation)
-    No AWS webhook - results only in logs.
     """
-    logger.info(f"🧪 TEST: Direct upload | file={video_file.filename} | language={language}")
+    logger.info(f"🧪 TEST: Direct upload | file={video_file.filename}")
     
     # Generate unique IDs
     video_id = f"test-{uuid.uuid4().hex[:8]}"
-    temp_video = f"temp_video_{video_id}.mp4"
-    temp_audio = f"temp_audio_{video_id}.wav"
+    
+    # Use absolute paths
+    base_dir = "/workspace/project"
+    temp_video = os.path.join(base_dir, f"temp_video_{video_id}.mp4")
+    temp_audio = os.path.join(base_dir, f"temp_audio_{video_id}.wav")
     
     try:
         # 1. Save uploaded video
@@ -144,6 +147,7 @@ async def test_local_transcription(
         # 2. Extract audio using ffmpeg
         logger.info(f"🎬 Extracting audio | videoId={video_id}")
         
+        # Check if ffmpeg works
         result = subprocess.run([
             "ffmpeg", "-y",
             "-i", temp_video,
@@ -158,16 +162,21 @@ async def test_local_transcription(
             logger.error(f"FFmpeg error: {result.stderr}")
             raise Exception(f"Audio extraction failed: {result.stderr}")
         
-        logger.info(f"✅ Audio extracted | videoId={video_id} | path={temp_audio}")
+        # Check if audio file was created
+        if not os.path.exists(temp_audio):
+            raise Exception(f"Audio file not created: {temp_audio}")
+        
+        audio_size = os.path.getsize(temp_audio)
+        logger.info(f"✅ Audio extracted | videoId={video_id} | size={audio_size} bytes | path={temp_audio}")
         
         # 3. Queue for pipeline processing
         from app.batch.queue_manager import input_queue
         await input_queue.put({
             "video_id": video_id,
-            "temp_path": temp_audio
+            "temp_path": temp_audio  # Use full path
         })
         
-        logger.info(f"📦 Job queued | videoId={video_id}")
+        logger.info(f"📦 Job queued | videoId={video_id} | queue_size={input_queue.qsize()}")
         
         # 4. Clean up video file (keep audio for processing)
         if os.path.exists(temp_video):
@@ -180,7 +189,8 @@ async def test_local_transcription(
             "videoId": video_id,
             "filename": video_file.filename,
             "language": language,
-            "message": f"Video queued for processing. Check logs for videoId: {video_id}"
+            "audio_path": temp_audio,
+            "message": f"Video queued. Check logs: tail -f /workspace/project/logs/fastapi.out.log | grep {video_id}"
         }
         
     except Exception as e:
@@ -190,6 +200,7 @@ async def test_local_transcription(
         for path in [temp_video, temp_audio]:
             if os.path.exists(path):
                 os.remove(path)
+                logger.info(f"🗑️ Cleaned up: {path}")
         
         return {
             "status": "error",
@@ -198,31 +209,16 @@ async def test_local_transcription(
         }
 
 
-@router.get("/test-status/{video_id}")
-async def test_status(video_id: str):
-    """
-    Check processing status for a test video.
-    """
-    import subprocess
+@router.get("/queue-status")
+async def queue_status():
+    """Check queue sizes and worker status"""
+    from app.batch.queue_manager import input_queue, whisper_queue, qwen_queue, translation_queue
     
-    # Check if video_id appears in logs
-    result = subprocess.run(
-        f"grep '{video_id}' logs/fastapi.out.log 2>/dev/null | tail -30",
-        shell=True,
-        capture_output=True,
-        text=True
-    )
-    
-    if result.stdout:
-        return {
-            "videoId": video_id,
-            "found": True,
-            "logs": result.stdout,
-            "message": "Check logs above for complete output"
-        }
-    else:
-        return {
-            "videoId": video_id,
-            "found": False,
-            "message": "Video ID not found in logs. Still processing or not started."
-        }
+    return {
+        "input_queue_size": input_queue.qsize(),
+        "whisper_queue_size": whisper_queue.qsize(),
+        "qwen_queue_size": qwen_queue.qsize(),
+        "translation_queue_size": translation_queue.qsize(),
+        "workers_running": True,
+        "note": "If input_queue > 0 and other queues = 0, workers may be stuck"
+    }
